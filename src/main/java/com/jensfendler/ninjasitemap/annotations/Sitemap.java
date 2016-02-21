@@ -20,6 +20,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.jensfendler.ninjasitemap.SitemapMultiPageProvider;
 import com.jensfendler.ninjasitemap.SitemapRouteDetails;
 
 /**
@@ -76,12 +77,18 @@ public @interface Sitemap {
      * SitemapMultiPageProvider interface, to generate a set of pages from one
      * route.
      * 
-     * @return
+     * @return the full class name of the {@link SitemapMultiPageProvider}
+     *         implementation to use for this controller method
      */
     String multiPageProvider() default NO_MULTIPAGE_PROVIDER;
 
     /**
-     * The path to use for this (non-dynamic) route in the sitemap.
+     * Explicitly provide a path for the sitemap entry of this controller
+     * method. Note: setting this parameter only makes sense for non-dynamic
+     * routes.
+     * 
+     * By default, this value will be automatically determined from the route's
+     * URI.
      * 
      * @return the path (page name) to use in the sitemap.
      */
@@ -97,6 +104,8 @@ public @interface Sitemap {
     /**
      * The change frequency of this page in the sitemap. Should be one of the
      * frequency constants of the {@link Sitemap} annotation.
+     * 
+     * @return the change frequency (in the range 0.0 to 1.0)
      */
     int changeFrequency() default DEFAULT_CHANGE_FREQUENCY;
 

@@ -37,7 +37,7 @@ public interface SitemapRouteDetails {
 	 *            the {@link Sitemap} annotation.
 	 * @return the default {@link Date} to use as value for "lastModified"
 	 */
-	public Date getLastModifiedDateForRoute(Route route, Sitemap sitemapAnnotation);
+    public Date getLastModifiedDateForRoute(Route route, Sitemap sitemapAnnotation);
 
 	/**
 	 * If the {@link Sitemap#priority()} value is set to
