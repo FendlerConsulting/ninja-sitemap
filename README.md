@@ -90,6 +90,23 @@ public class MyContoller {
 
 ```
 
+Advanced Configuration
+----------------------
+Ninja Sitemap can be configured further with some properties in your `application.conf` file as follows:
+
+- `ninja.sitemap.prefix` (String): The prefix URL to use for all entries in the sitemap. This property _should always_ be configured to ensure correct URLs in your sitemap. (See above).
+
+- `ninja.sitemap.expires` (String): The expiry time of the cached sitemap after an update. This must be a string compatible with the time format of the `NinjaCache` interface (e.g. "12h"). Default: "6h".
+
+- `ninja.sitemap.ping.google` (boolean): If true, the Google search engine will be notified every time your sitemap has been updated. Default: false.
+ 
+- `ninja.sitemap.ping.bing` (boolean): If true, the Bing search engine will be notified every time your sitemap has been updated. Default: false.
+
+- `ninja.sitemap.multiPageWarnings` (boolean): If true, warning messages will be logged when the sitemap generator encounters a non-dynamic method which has been configured to use a `SitemapMultiPageProvider` (i.e. might result in more than one entry in the sitemap). If you know what you are doing, and these warnings annoy you, set this property to `false` to switch them off. Default: true.
+
+- `ninja.sitemap.routeDetailsProvider` (String): The name of a class implementing the `SitemapRouteDetails` interface. Your own implementation of this class can then control details such as the last-modified date, changeFrequency, and priority for each entry in your sitemap dynamically at run-time (rather than set to fixed values using the annotation parameters). Default: `com.jensfendler.ninjasitemap.SimpleSitemapRouteDetails`.
+
+
 ## License
 
 Copyright (C) 2016 Fendler Consulting cc.
