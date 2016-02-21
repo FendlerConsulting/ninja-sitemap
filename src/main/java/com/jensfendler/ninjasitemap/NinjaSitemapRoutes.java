@@ -18,6 +18,7 @@ package com.jensfendler.ninjasitemap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
 import com.jensfendler.ninjasitemap.controller.NinjaSitemapController;
 
 import ninja.Router;
@@ -30,12 +31,13 @@ import ninja.utils.NinjaProperties;
  */
 public class NinjaSitemapRoutes implements ApplicationRoutes {
 
+    public static final String KEY_SITEMAP_ROUTE = "ninja.sitemap.route";
+
+    public static final String DEFAULT_SITEMAP_ROUTE = "/sitemap.xml";
+
     protected static final Logger LOG = LoggerFactory.getLogger(NinjaSitemapRoutes.class);
 
-    protected static final String KEY_SITEMAP_ROUTE = "ninja.sitemap.route";
-
-    protected static final String DEFAULT_SITEMAP_ROUTE = "/sitemap.xml";
-
+    @Inject
     protected NinjaProperties ninjaProperties;
 
     /**

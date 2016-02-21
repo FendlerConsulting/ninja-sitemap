@@ -18,6 +18,7 @@ package com.jensfendler.ninjasitemap.controller;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +26,14 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.jensfendler.ninjasitemap.SitemapRouteDetails;
+import com.jensfendler.ninjasitemap.NinjaSitemapRoutes;
 import com.jensfendler.ninjasitemap.SitemapEntry;
 import com.jensfendler.ninjasitemap.SitemapMultiPageProvider;
 import com.jensfendler.ninjasitemap.annotations.Sitemap;
 
 import cz.jiripinkas.jsitemapgenerator.ChangeFreq;
 import cz.jiripinkas.jsitemapgenerator.WebPage;
+import cz.jiripinkas.jsitemapgenerator.exception.GWTException;
 import cz.jiripinkas.jsitemapgenerator.generator.SitemapGenerator;
 import ninja.Context;
 import ninja.Result;
@@ -61,9 +64,43 @@ public class NinjaSitemapController {
      */
     private static final String KEY_SITEMAP_PREFIX = "ninja.sitemap.prefix";
 
+    /**
+     * An application.conf property to control the expiry time of the sitemap in
+     * Ninja's cache. This value should preferably be less than half the
+     * shortest 'changeFrequency' of your sitemap entries.
+     */
     private static final String KEY_NINJA_SITEMAP_EXPIRED = "ninja.sitemap.expires";
 
+    /**
+     * The default expiry time of the sitemap string in Ninja's cache. Defaults
+     * to 6 hours ("6h"). The string must be in a format compatible with the
+     * {@link NinjaCache} methods.
+     */
     private static final String DEFAULT_SITEMAP_EXPIRY_TIME = "12h";
+
+    /**
+     * If this application.conf property is 'true', the Google search engine is
+     * informed of updates to the sitemap. Default: false.
+     */
+    private static final String KEY_PING_GOOGLE = "ninja.sitemap.ping.google";
+
+    /**
+     * If this application.conf property is 'true', the Bing search engine is
+     * informed of updates to the sitemap. Default: false.
+     */
+    private static final String KEY_PING_BING = "ninja.sitemap.ping.bing";
+
+    /**
+     * The cache key to use for the sitemap.
+     */
+    private static final String SITEMAP_CACHE_KEY = NinjaSitemapController.class.getSimpleName() + "-sitemap";
+
+    /**
+     * If this key is set to 'false', no warnings will be logged when using a
+     * {@link SitemapMultiPageProvider} for a non-dynamic route. If this
+     * property is 'true' (the default), a warning will be logged.
+     */
+    private static final String KEY_SHOW_MPP_WARNINGS = "ninja.sitemap.multiPageWarnings";
 
     @Inject
     protected NinjaCache cache;
@@ -87,7 +124,7 @@ public class NinjaSitemapController {
     public Result getSitemapXml(Context context) {
 
         // attempt a cache lookup first.
-        String sitemapString = (String) cache.get(getSitemapCacheKey());
+        String sitemapString = (String) cache.get(SITEMAP_CACHE_KEY);
 
         if (sitemapString == null) {
             // sitemap is not in cache. re-create.
@@ -117,7 +154,7 @@ public class NinjaSitemapController {
 
         siteUrlPrefix = siteUrlPrefix.replaceAll("/$", "");
 
-        SitemapGenerator generator = new SitemapGenerator(siteUrlPrefix);
+        final SitemapGenerator generator = new SitemapGenerator(siteUrlPrefix);
 
         for (Route route : router.getRoutes()) {
             Sitemap sitemap = route.getControllerMethod().getAnnotation(Sitemap.class);
@@ -135,8 +172,49 @@ public class NinjaSitemapController {
         String sitemapString = generator.constructSitemapString();
         String sitemapCacheExpires = ninjaProperties.getWithDefault(KEY_NINJA_SITEMAP_EXPIRED,
                 DEFAULT_SITEMAP_EXPIRY_TIME);
-        cache.safeAdd(getSitemapCacheKey(), sitemapString, sitemapCacheExpires);
-        LOG.info("Sitemap has been updated and cached. Will be recreated in {}.", sitemapCacheExpires);
+        boolean isCached = cache.safeSet(SITEMAP_CACHE_KEY, sitemapString, sitemapCacheExpires);
+        if (isCached) {
+            LOG.info("Sitemap has been updated and cached. Will be recreated in {}.", sitemapCacheExpires);
+        } else {
+            // perhaps this is the first time cache
+            LOG.warn("Sitemap has been updated and will be delivered, but could not be cached.");
+        }
+
+        // check if we should ping google/bing for the updated sitemap
+        final boolean shouldPingGoogle = ninjaProperties.getBooleanWithDefault(KEY_PING_GOOGLE, false);
+        final boolean shouldPingBing = ninjaProperties.getBooleanWithDefault(KEY_PING_BING, false);
+        if (shouldPingGoogle || shouldPingBing) {
+
+            String sitemapRoute = ninjaProperties.getWithDefault(NinjaSitemapRoutes.KEY_SITEMAP_ROUTE,
+                    NinjaSitemapRoutes.DEFAULT_SITEMAP_ROUTE);
+            if (!sitemapRoute.startsWith("/")) {
+                sitemapRoute = "/" + sitemapRoute;
+            }
+            final String sitemapUrl = siteUrlPrefix + sitemapRoute;
+
+            // pinging search engines will take some time. run this in a new
+            // thread so that the current request can immediately be served.
+            Executors.defaultThreadFactory().newThread(new Runnable() {
+                public void run() {
+                    if (shouldPingGoogle) {
+                        try {
+                            generator.pingGoogle(sitemapUrl);
+                            LOG.info("Google search engine has been notified of updated sitemap at '{}'.", sitemapUrl);
+                        } catch (GWTException e) {
+                            LOG.warn("Failed to ping Google with updated sitemap.", e);
+                        }
+                    }
+                    if (shouldPingBing) {
+                        try {
+                            generator.pingBing(sitemapUrl);
+                            LOG.info("Bing search engine has been notified of updated sitemap at '{}'.", sitemapUrl);
+                        } catch (GWTException e) {
+                            LOG.warn("Failed to ping Google with updated sitemap.", e);
+                        }
+                    }
+                }
+            }).start();
+        }
 
         // return the sitemap.xml data as a string
         return sitemapString;
@@ -169,9 +247,9 @@ public class NinjaSitemapController {
                         .forName(smppClassName);
                 SitemapMultiPageProvider smpp = smppClass.newInstance();
 
-                if (!dynamicRoute) {
-                    // notice that this is strange - creating multiple sitemap
-                    // entries for a non-dynamic route.
+                if (!dynamicRoute && ninjaProperties.getBooleanWithDefault(KEY_SHOW_MPP_WARNINGS, true)) {
+                    // using a MultiPageProvider for a non-dynamic route is
+                    // usually strange. warn about it.
                     LOG.warn(
                             "Using {} to create sitemap entries for non-dynamic route {} to {}.{}. Is this really intended?",
                             smppClassName, route.getUri(), route.getControllerClass().getName(),
@@ -305,15 +383,6 @@ public class NinjaSitemapController {
 
             return true;
         }
-    }
-
-    /**
-     * Gets the key to use for caching the complete sitemap string (XML data).
-     * 
-     * @return the cache key for the sitemap data
-     */
-    public static String getSitemapCacheKey() {
-        return NinjaSitemapController.class.getName() + ".sitemap";
     }
 
 }

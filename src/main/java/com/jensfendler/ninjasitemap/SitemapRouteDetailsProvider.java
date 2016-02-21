@@ -52,7 +52,7 @@ public class SitemapRouteDetailsProvider implements Provider<SitemapRouteDetails
 			return srd;
 		} catch (ClassNotFoundException e) {
 			LOG.error("Could not load " + SitemapRouteDetails.class.getSimpleName() + " implementation " + sdpClassName + ". Please check your '"
-					+ KEY_SITEMAP_ROUTE_DETAILS_IMPL + "' setting in application.conf. Will use default provider for now.", e);
+					+ KEY_SITEMAP_ROUTE_DETAILS_IMPL + "' setting in application.conf.", e);
 			return null;
 		} catch (InstantiationException e) {
 			LOG.error("Could not instantiate " + SitemapRouteDetails.class.getSimpleName() + " implementation " + sdpClassName + ".", e);
@@ -60,7 +60,7 @@ public class SitemapRouteDetailsProvider implements Provider<SitemapRouteDetails
 		} catch (IllegalAccessException e) {
 			LOG.error("Could not instantiate " + SitemapRouteDetails.class.getSimpleName() + " implementation " + sdpClassName + ".", e);
 			return null;
-		}
-	}
+        }
+    }
 
 }

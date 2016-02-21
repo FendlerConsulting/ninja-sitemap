@@ -83,7 +83,7 @@ public class MyContoller {
     
     // create multiple entries in the sitemap for a controller method with `@PathParam` arguments
     @Sitemap(multiPageProvider="modules.MyMultiPageProvider")
-    public void productDetails(Context context, @PathParam("productId") long productId) {
+    public Result productDetails(Context context, @PathParam("productId") long productId) {
         // ...
     }
 }
