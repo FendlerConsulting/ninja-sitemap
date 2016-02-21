@@ -16,10 +16,21 @@
 	</parent>
 
 	<properties>
-		<ninja.version>5.3.0</ninja.version>
-		<jetty.version>9.2.10.v20150310</jetty.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<copyright.year>2016</copyright.year>
+		<java.version>1.7</java.version>
+		<ninja.version>5.3.1</ninja.version>
 		<jsitemapgenerator.version>2.1</jsitemapgenerator.version>
 	</properties>
+
+	<organization>
+		<name>Fendler Consulting cc</name>
+		<url>http://www.jensfendler.com</url>
+	</organization>
+
+	<prerequisites>
+		<maven>3.3.3</maven>
+	</prerequisites>
 
 	<licenses>
 		<license>
@@ -32,7 +43,7 @@
 	<scm>
 		<url>https://github.com/FendlerConsulting/ninja-sitemap</url>
 		<connection>scm:git://github.com/FendlerConsulting/ninja-sitemap.git</connection>
-		<developerConnection>scm:git:git@github.com:jfendler/ninja-sitemap.git</developerConnection>
+		<developerConnection>scm:git:git@github.com:FendlerConsulting/ninja-sitemap.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -41,8 +52,23 @@
 			<id>1</id>
 			<name>Jens Fendler</name>
 			<email>jf@jensfendler.com</email>
+			<organization>Fendler Consulting cc</organization>
+			<organizationUrl>http://www.jensfendler.com</organizationUrl>
 		</developer>
 	</developers>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<name>Sonatype OSS Snapshots Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>sonatype-nexus-staging</id>
+			<name>Sonatype OSS Release Staging Repository</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+		</repository>
+	</distributionManagement>
 
 	<issueManagement>
 		<system>GitHub</system>
@@ -56,7 +82,6 @@
 			<archive>http://groups.google.com/group/ninja-framework</archive>
 		</mailingList>
 	</mailingLists>
-
 
 	<dependencies>
 		<dependency>
@@ -74,7 +99,7 @@
 		</dependency>
 
 		<dependency>
-			<!-- Sitemap generation from https://github.com/jirkapinkas/jsitemapgenerator -->
+			<!-- Java Sitemap Generator from https://github.com/jirkapinkas/jsitemapgenerator -->
 			<groupId>cz.jiripinkas</groupId>
 			<artifactId>jsitemapgenerator</artifactId>
 			<version>${jsitemapgenerator.version}</version>
@@ -87,82 +112,16 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-compiler-plugin</artifactId>
-					<configuration>
-						<source>1.7</source>
-						<target>1.7</target>
-					</configuration>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>1.6</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>2.5.3</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>
 
-	<profiles>
-		<!-- Do a license check by running : mvn -P license license:check -->
-		<!-- Update the license check by running : mvn -P license license:format -->
-		<profile>
-			<id>license</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.mycila.maven-license-plugin</groupId>
-						<artifactId>maven-license-plugin</artifactId>
-						<version>1.6.0</version>
-						<configuration>
-							<quiet>false</quiet>
-							<header>src/main/resources/LICENSE-2.0.txt</header>
-							<aggregate>true</aggregate>
-							<includes>
-								<include>**/src/**</include>
-								<include>**/pom.xml</include>
-							</includes>
-							<excludes>
-								<!-- ignore files produced during a build -->
-								<exclude>**/target/**</exclude>
-								<exclude>**/WEB-INF/classes/**</exclude>
-								<exclude>**/site/**</exclude>
-								<exclude>**/.DS_Store</exclude>
-
-								<!-- ignore binary files -->
-								<exclude>**/assets/**</exclude>
-								<exclude>**/views/**</exclude>
-							</excludes>
-							<useDefaultExcludes>false</useDefaultExcludes>
-						</configuration>
-						<executions>
-							<execution>
-								<goals>
-									<goal>check</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-source-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>attach-sources</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-javadoc-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>attach-javadocs</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>
