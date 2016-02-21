@@ -13,16 +13,14 @@ For every entry in your sitemap, you can specify the priority, the changeFrequen
 Basic Usage:
 ------------
 
-- Until this component is published to Maven Central, clone this repository and install locally by using `mvn clean compile install`. 
-
-- Add the dependency to your Ninja application's `pom.xml`:
+- ninja-sitemap has been published on Maven Central. Add the following dependency to your Ninja application's `pom.xml`:
 
 ```xml
 
     <dependency>
         <groupId>com.jensfendler</groupId>
         <artifactId>ninja-sitemap</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.1</version>
     </dependency>
 
 ```
