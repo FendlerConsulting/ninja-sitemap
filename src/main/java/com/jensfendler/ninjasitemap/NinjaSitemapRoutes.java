@@ -30,18 +30,22 @@ import ninja.utils.NinjaProperties;
  */
 public class NinjaSitemapRoutes implements ApplicationRoutes {
 
-	private static final Logger LOG = LoggerFactory.getLogger(NinjaSitemapRoutes.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(NinjaSitemapRoutes.class);
 
-	@SuppressWarnings("unused")
-	private NinjaProperties ninjaProperties;
+    protected static final String KEY_SITEMAP_ROUTE = "ninja.sitemap.route";
 
-	/**
-	 * @see ninja.application.ApplicationRoutes#init(ninja.Router)
-	 */
-	@Override
-	public void init(Router router) {
-		LOG.info("Installing Ninja Sitemap routes.");
-		router.GET().route("/sitemap.xml").with(NinjaSitemapController.class, "getSitemapXml");
-	}
+    protected static final String DEFAULT_SITEMAP_ROUTE = "/sitemap.xml";
+
+    protected NinjaProperties ninjaProperties;
+
+    /**
+     * @see ninja.application.ApplicationRoutes#init(ninja.Router)
+     */
+    @Override
+    public void init(Router router) {
+        String sitemapRoute = ninjaProperties.getWithDefault(KEY_SITEMAP_ROUTE, DEFAULT_SITEMAP_ROUTE);
+        LOG.info("Installing Ninja Sitemap routes: {}", sitemapRoute);
+        router.GET().route(sitemapRoute).with(NinjaSitemapController.class, "getSitemapXml");
+    }
 
 }
