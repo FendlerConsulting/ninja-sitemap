@@ -83,6 +83,22 @@ public @interface Sitemap {
     String multiPageProvider() default NO_MULTIPAGE_PROVIDER;
 
     /**
+     * If set to true, instances of the {@link SitemapMultiPageProvider}
+     * specified in the {@link #multiPageProvider()} property will be created
+     * via the Guice injector (if possible). This will allow the created objects
+     * to access other DAOs or Ninja objects via Guice dependency injection.
+     * 
+     * For this to work, the class specified in the {@link #multiPageProvider()}
+     * property must be bound in your <code>ninja.Module</code> class -
+     * preferably <em>before</em> the Ninja-Sitemap module is installed.
+     * 
+     * @return true, if the Guice injector should be used to create instances of
+     *         the {@link SitemapMultiPageProvider} class; or false (the
+     *         default) for plain Java class instantiation.
+     */
+    boolean useInjector() default false;
+
+    /**
      * Explicitly provide a path for the sitemap entry of this controller
      * method. Note: setting this parameter only makes sense for non-dynamic
      * routes.

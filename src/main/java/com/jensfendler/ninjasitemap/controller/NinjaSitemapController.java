@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import com.jensfendler.ninjasitemap.SitemapRouteDetails;
 import com.jensfendler.ninjasitemap.NinjaSitemapRoutes;
@@ -114,6 +115,9 @@ public class NinjaSitemapController {
     @Inject
     protected SitemapRouteDetails sitemapDetailsProvider;
 
+    @Inject
+    protected Injector injector;
+
     /**
      * Returns the sitemap.xml data following a GET request to /sitemap.xml
      * 
@@ -194,26 +198,34 @@ public class NinjaSitemapController {
 
             // pinging search engines will take some time. run this in a new
             // thread so that the current request can immediately be served.
-            Executors.defaultThreadFactory().newThread(new Runnable() {
-                public void run() {
-                    if (shouldPingGoogle) {
-                        try {
-                            generator.pingGoogle(sitemapUrl);
-                            LOG.info("Google search engine has been notified of updated sitemap at '{}'.", sitemapUrl);
-                        } catch (GWTException e) {
-                            LOG.warn("Failed to ping Google with updated sitemap.", e);
+            if (ninjaProperties.isProd()) {
+                // only ping search engines in PROD mode
+                Executors.defaultThreadFactory().newThread(new Runnable() {
+                    public void run() {
+                        if (shouldPingGoogle) {
+                            try {
+                                generator.pingGoogle(sitemapUrl);
+                                LOG.info("Google search engine has been notified of updated sitemap at '{}'.",
+                                        sitemapUrl);
+                            } catch (GWTException e) {
+                                LOG.warn("Failed to ping Google with updated sitemap.", e);
+                            }
+                        }
+                        if (shouldPingBing) {
+                            try {
+                                generator.pingBing(sitemapUrl);
+                                LOG.info("Bing search engine has been notified of updated sitemap at '{}'.",
+                                        sitemapUrl);
+                            } catch (GWTException e) {
+                                LOG.warn("Failed to ping Google with updated sitemap.", e);
+                            }
                         }
                     }
-                    if (shouldPingBing) {
-                        try {
-                            generator.pingBing(sitemapUrl);
-                            LOG.info("Bing search engine has been notified of updated sitemap at '{}'.", sitemapUrl);
-                        } catch (GWTException e) {
-                            LOG.warn("Failed to ping Google with updated sitemap.", e);
-                        }
-                    }
-                }
-            }).start();
+                }).start();
+            } else {
+                LOG.info("Not pinging search engines in non-production mode.");
+            }
+
         }
 
         // return the sitemap.xml data as a string
@@ -245,7 +257,9 @@ public class NinjaSitemapController {
             try {
                 Class<? extends SitemapMultiPageProvider> smppClass = (Class<? extends SitemapMultiPageProvider>) Class
                         .forName(smppClassName);
-                SitemapMultiPageProvider smpp = smppClass.newInstance();
+
+                SitemapMultiPageProvider smpp = sitemap.useInjector() ? injector.getInstance(smppClass)
+                        : smppClass.newInstance();
 
                 if (!dynamicRoute && ninjaProperties.getBooleanWithDefault(KEY_SHOW_MPP_WARNINGS, true)) {
                     // using a MultiPageProvider for a non-dynamic route is
@@ -256,24 +270,35 @@ public class NinjaSitemapController {
                             route.getControllerMethod().getName());
                 }
 
-                List<SitemapEntry> entries = smpp.getSitemapEntries(route, sitemap);
-                if ((entries == null) || (entries.size() == 0)) {
-                    LOG.warn("{} did not return any sitemap entries for route {} to {}.{}.", smppClassName,
-                            route.getUri(), route.getControllerClass().getName(),
-                            route.getControllerMethod().getName());
-                } else {
-                    for (SitemapEntry se : entries) {
-                        WebPage wp = new WebPage();
-                        wp.setName(se.getPagePath().replaceFirst("^/", ""));
-                        wp.setShortName(se.getShortName());
-                        wp.setShortDescription(se.getShortDescription());
-                        wp.setLastMod(se.getLastModified());
-                        wp.setPriority(se.getPriority());
-                        wp.setChangeFreq(changeFrequencyFromInteger(se.getChangeFrequency()));
+                try {
+                    List<SitemapEntry> entries = smpp.getSitemapEntries(route, sitemap);
+                    if ((entries == null) || (entries.size() == 0)) {
+                        LOG.warn("{} did not return any sitemap entries for route {} to {}.{}.", smppClassName,
+                                route.getUri(), route.getControllerClass().getName(),
+                                route.getControllerMethod().getName());
+                    } else {
+                        for (SitemapEntry se : entries) {
+                            WebPage wp = new WebPage();
+                            wp.setName(se.getPagePath().replaceFirst("^/", ""));
+                            wp.setShortName(se.getShortName());
+                            wp.setShortDescription(se.getShortDescription());
+                            wp.setLastMod(se.getLastModified());
+                            wp.setPriority(se.getPriority());
+                            wp.setChangeFreq(changeFrequencyFromInteger(se.getChangeFrequency()));
 
-                        // add to the list of pages for this route
-                        pages.add(wp);
+                            // add to the list of pages for this route
+                            pages.add(wp);
+                        }
                     }
+                } catch (NullPointerException npe) {
+                    if (sitemap.useInjector()) {
+                        // using injector - show an error message pointing to a
+                        // likely cause of the problem.
+                        LOG.error(
+                                "NullPointerException in {} when using 'useInjector'. Perhaps you forgot to bind() your class in ninja.Module?",
+                                smppClass.getName());
+                    }
+                    throw npe;
                 }
 
             } catch (ClassNotFoundException e) {

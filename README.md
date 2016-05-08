@@ -20,7 +20,7 @@ Basic Usage:
     <dependency>
         <groupId>com.jensfendler</groupId>
         <artifactId>ninja-sitemap</artifactId>
-        <version>0.0.2</version>
+        <version>0.0.3</version>
     </dependency>
 
 ```
@@ -31,6 +31,12 @@ Basic Usage:
 
 	install(new NinjaSitemapModule());
 
+```
+
+If you plan to use Guice injection in your `SitemapMultiPageProvider` classes (see `useInjector` setting below), you need to bind the respective classes here as well. E.g.
+```java
+
+   bind( ProductSitemapMultiPageProvider.class );
 ```
 
 - Inject `NinjaSitemapRoutes` into your `conf.Router` class, and make a call to its `init(Router)` method:
@@ -65,24 +71,30 @@ Example:
 @Singleton
 public class MyContoller {
 
+	// create a single sitemap entry with default priority and change frequency
+    @Sitemap
+    public Result aboutUs(Context context) {
+        // ...
+    }
+    
     // create a single sitemap entry with maximum priority and an hourly change frequency
-     
     @Sitemap(priority=1.0, changeFrequency=Sitemap.HOURLY)
     public Result homepage(Context context) {
         // ...
     }
 
 
-	// create a single sitemap entry with default priority and change frequency
-	
-    @Sitemap
-    public Result aboutUs(Context context) {
+    // Create multiple entries in the sitemap for a controller method with `@PathParam` arguments
+    // A SimpleMultiPageProvider instance will be created straight from the given class (without Guice injection) 
+    @Sitemap(multiPageProvider="modules.SimpleMultiPageProvider")
+    public Result productDetails(Context context, @PathParam("productId") long productId) {
         // ...
     }
     
-    
-    // create multiple entries in the sitemap for a controller method with `@PathParam` arguments
-    @Sitemap(multiPageProvider="modules.MyMultiPageProvider")
+    // Create multiple entries in the sitemap for a controller method with `@PathParam` arguments
+    // A ProductSitemapMultiPageProvider instance will be created using the Guice injector, to allow e.g.
+    // injection of DAOs or other Ninja modules. 
+    @Sitemap(multiPageProvider="modules.ProductSitemapMultiPageProvider", useInjector=true)
     public Result productDetails(Context context, @PathParam("productId") long productId) {
         // ...
     }
@@ -92,9 +104,11 @@ public class MyContoller {
 
 - You should now be able to view your sitemap by pointing your browser to `/sitemap.xml` (under your application's context path).
 
+For further details, please have a look at the JavaDoc documentation, especially of the `Sitemap.java` annotation code. 
 
-Advanced Configuration
-----------------------
+
+Ninja Configuration Properties
+------------------------------
 Ninja Sitemap can be configured further with some properties in your `application.conf` file as follows:
 
 - `ninja.sitemap.prefix` (String): The prefix URL to use for all entries in the sitemap. This property _should always_ be configured to ensure correct URLs in your sitemap. (See above).
