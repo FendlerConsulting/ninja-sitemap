@@ -41,7 +41,6 @@ public class SitemapRouteDetailsProvider implements Provider<SitemapRouteDetails
 	/**
 	 * @see com.google.inject.Provider#get()
 	 */
-	@Override
 	public SitemapRouteDetails get() {
 		String sdpClassName = ninjaProperties.getWithDefault(KEY_SITEMAP_ROUTE_DETAILS_IMPL, DEFAULT_SITEMAP_ROUTE_DETAILS_CLASSNAME);
 		try {

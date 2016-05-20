@@ -85,16 +85,9 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.ninjaframework</groupId>
-			<artifactId>ninja-standalone</artifactId>
+			<artifactId>ninja-core</artifactId>
 			<version>${ninja.version}</version>
 			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.ninjaframework</groupId>
-			<artifactId>ninja-test-utilities</artifactId>
-			<version>${ninja.version}</version>
-			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -108,6 +101,12 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.5.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 

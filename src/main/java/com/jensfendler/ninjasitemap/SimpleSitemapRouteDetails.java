@@ -41,7 +41,6 @@ public class SimpleSitemapRouteDetails implements SitemapRouteDetails {
      * @see com.jensfendler.ninjasitemap.SitemapRouteDetails#getLastModifiedDateForRoute(ninja.Route,
      *      com.jensfendler.ninjasitemap.annotations.Sitemap)
      */
-    @Override
     public Date getLastModifiedDateForRoute(Route route, Sitemap sitemapAnnotation) {
         // assume the page has just been updated
         return new Date();
@@ -51,7 +50,6 @@ public class SimpleSitemapRouteDetails implements SitemapRouteDetails {
      * @see com.jensfendler.ninjasitemap.SitemapRouteDetails#getPriorityForRoute(ninja.Route,
      *      com.jensfendler.ninjasitemap.annotations.Sitemap)
      */
-    @Override
     public double getPriorityForRoute(Route route, Sitemap sitemap) {
         // always use the default priority
         return Sitemap.DEFAULT_PRIORITY;
@@ -61,7 +59,6 @@ public class SimpleSitemapRouteDetails implements SitemapRouteDetails {
      * @see com.jensfendler.ninjasitemap.SitemapRouteDetails#getChangeFrequencyForRoute(ninja.Route,
      *      com.jensfendler.ninjasitemap.annotations.Sitemap)
      */
-    @Override
     public int getChangeFrequencyForRoute(Route route, Sitemap sitemap) {
         // always use the default frequency
         return Sitemap.DEFAULT_CHANGE_FREQUENCY;

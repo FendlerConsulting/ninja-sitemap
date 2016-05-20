@@ -43,7 +43,6 @@ public class NinjaSitemapRoutes implements ApplicationRoutes {
     /**
      * @see ninja.application.ApplicationRoutes#init(ninja.Router)
      */
-    @Override
     public void init(Router router) {
         String sitemapRoute = ninjaProperties.getWithDefault(KEY_SITEMAP_ROUTE, DEFAULT_SITEMAP_ROUTE);
         LOG.info("Installing Ninja Sitemap routes: {}", sitemapRoute);
