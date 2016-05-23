@@ -253,7 +253,6 @@ public class NinjaSitemapController {
      *            the {@link Route}
      * @return a {@link Collection} of WebPages for the sitemap
      */
-    @SuppressWarnings("unchecked")
     private Collection<WebPage> createSitemapPages(Sitemap sitemap, Route route) {
         Collection<WebPage> pages = new ArrayList<WebPage>();
 
@@ -263,111 +262,152 @@ public class NinjaSitemapController {
 
         // check if we have a SitemapMultiPageProvider registered for this route
         String smppClassName = sitemap.multiPageProvider();
+
         if (!Sitemap.NO_MULTIPAGE_PROVIDER.equals(smppClassName)) {
-            try {
-                Class<? extends SitemapMultiPageProvider> smppClass = (Class<? extends SitemapMultiPageProvider>) Class
-                        .forName(smppClassName);
-
-                SitemapMultiPageProvider smpp = sitemap.useInjector() ? injector.getInstance(smppClass)
-                        : smppClass.newInstance();
-
-                if (!dynamicRoute && ninjaProperties.getBooleanWithDefault(KEY_SHOW_MPP_WARNINGS, true)) {
-                    // using a MultiPageProvider for a non-dynamic route is
-                    // usually strange. warn about it.
-                    LOG.warn(
-                            "Using {} to create sitemap entries for non-dynamic route {} to {}.{}. Is this really intended?",
-                            smppClassName, route.getUri(), route.getControllerClass().getName(),
-                            route.getControllerMethod().getName());
-                }
-
-                try {
-                    List<SitemapEntry> entries = smpp.getSitemapEntries(route, sitemap);
-                    if ((entries == null) || (entries.size() == 0)) {
-                        LOG.warn("{} did not return any sitemap entries for route {} to {}.{}.", smppClassName,
-                                route.getUri(), route.getControllerClass().getName(),
-                                route.getControllerMethod().getName());
-                    } else {
-                        for (SitemapEntry se : entries) {
-                            WebPage wp = new WebPage();
-                            wp.setName(se.getPagePath().replaceFirst("^/", ""));
-                            wp.setShortName(se.getShortName());
-                            wp.setShortDescription(se.getShortDescription());
-                            wp.setLastMod(se.getLastModified());
-                            wp.setPriority(se.getPriority());
-                            wp.setChangeFreq(changeFrequencyFromInteger(se.getChangeFrequency()));
-
-                            // add to the list of pages for this route
-                            pages.add(wp);
-                        }
-                    }
-                } catch (NullPointerException npe) {
-                    if (sitemap.useInjector()) {
-                        // using injector - show an error message pointing to a
-                        // likely cause of the problem.
-                        LOG.error(
-                                "NullPointerException in {} when using 'useInjector'. Perhaps you forgot to bind() your class in ninja.Module?",
-                                smppClass.getName());
-                    }
-                    throw npe;
-                }
-
-            } catch (ClassNotFoundException e) {
-                LOG.error("Could not find class " + smppClassName + " as specified for "
-                        + route.getControllerClass().getName() + "." + route.getControllerMethod().getName()
-                        + ". Not including in sitemap.", e);
-            } catch (InstantiationException e) {
-                LOG.error("Could not instantiate class " + smppClassName + " as specified for "
-                        + route.getControllerClass().getName() + "." + route.getControllerMethod().getName()
-                        + ". Not including in sitemap.", e);
-            } catch (IllegalAccessException e) {
-                LOG.error("Illegal access to constructor of class " + smppClassName + " as specified for "
-                        + route.getControllerClass().getName() + "." + route.getControllerMethod().getName()
-                        + ". Not including in sitemap.", e);
-            }
+            addSitemapPagesFromMPP(route, sitemap, smppClassName, dynamicRoute, pages);
 
         } else if (!dynamicRoute) {
-            // no SitemapMultiPageProvider given, and not a dynamic route.
-            // standard case.
-            WebPage wp = new WebPage();
-            if (!Sitemap.NO_PATH.equals(sitemap.path())) {
-                // a path (name) was explicitly given
-                wp.setName(sitemap.path().replaceFirst("^/", ""));
-            } else {
-                // set the path from the router
-                wp.setName(route.getUri().replaceFirst("^/", ""));
-            }
-            wp.setLastMod(sitemapDetailsProvider.getLastModifiedDateForRoute(route, sitemap));
-
-            if (sitemap.priority() == Sitemap.PRIORITY_DYNAMIC) {
-                wp.setPriority(sitemapDetailsProvider.getPriorityForRoute(route, sitemap));
-            } else {
-                wp.setPriority(sitemap.priority());
-            }
-
-            if (sitemap.changeFrequency() == Sitemap.CHANGE_FREQUENCY_DYNAMIC) {
-                wp.setChangeFreq(
-                        changeFrequencyFromInteger(sitemapDetailsProvider.getChangeFrequencyForRoute(route, sitemap)));
-            } else {
-                wp.setChangeFreq(changeFrequencyFromInteger(sitemap.changeFrequency()));
-            }
-
-            // add to the list of pages for this route
-            pages.add(wp);
+            addSitemapPageStatic(route, sitemap, pages);
 
         } else {
             // no SitemapMultiPageProvider given, but a dynamic route. warn
             // about this.
             LOG.warn(
-                    "Dynamic Route {} in controller {}.{} does not provide a {} implementation. Not including in sitemap.",
+                    "Dynamic Route {} in controller {}::{} does not provide a {} implementation. Not including in sitemap.",
                     route.getUri(), route.getControllerClass().getName(), route.getControllerMethod().getName(),
                     SitemapMultiPageProvider.class.getSimpleName());
         }
 
-        LOG.debug("Returning {} pages in sitemap.xml for route {}.", pages.size(), route.getUri());
+        LOG.debug("Using {} {} in sitemap.xml for route {}.", pages.size(), (pages.size() == 1 ? "entry" : "entries"),
+                route.getUri());
         return pages;
     }
 
     /**
+     * Add a single entry to the collection of sitemap entries.
+     * 
+     * @param route
+     *            the route for which to generate the sitemap entry
+     * @param sitemap
+     *            the {@link Sitemap} annotation for the route
+     * @param pages
+     *            the (existing, non-null) collection of all sitemap entries
+     */
+    private void addSitemapPageStatic(Route route, Sitemap sitemap, Collection<WebPage> pages) {
+        // no SitemapMultiPageProvider given, and not a dynamic route.
+        // standard case.
+        WebPage wp = new WebPage();
+        if (!Sitemap.NO_PATH.equals(sitemap.path())) {
+            // a path (name) was explicitly given
+            wp.setName(sitemap.path().replaceFirst("^/", ""));
+        } else {
+            // set the path from the router
+            wp.setName(route.getUri().replaceFirst("^/", ""));
+        }
+        wp.setLastMod(sitemapDetailsProvider.getLastModifiedDateForRoute(route, sitemap));
+
+        if (sitemap.priority() == Sitemap.PRIORITY_DYNAMIC) {
+            wp.setPriority(sitemapDetailsProvider.getPriorityForRoute(route, sitemap));
+        } else {
+            wp.setPriority(sitemap.priority());
+        }
+
+        if (sitemap.changeFrequency() == Sitemap.CHANGE_FREQUENCY_DYNAMIC) {
+            wp.setChangeFreq(
+                    changeFrequencyFromInteger(sitemapDetailsProvider.getChangeFrequencyForRoute(route, sitemap)));
+        } else {
+            wp.setChangeFreq(changeFrequencyFromInteger(sitemap.changeFrequency()));
+        }
+
+        // add to the list of pages for this route
+        pages.add(wp);
+    }
+
+    /**
+     * Add multiple entries to the collection of sitemap.xml entries, based on a
+     * user-provided {@link SitemapMultiPageProvider} implementation.
+     * 
+     * @param route
+     *            the route for which to generate the sitemap entries
+     * @param sitemap
+     *            the {@link Sitemap} annotation
+     * @param pages
+     *            the (existing, non-null) collection of all sitemap entries to
+     *            which entries should be added
+     */
+    @SuppressWarnings("unchecked")
+    private void addSitemapPagesFromMPP(Route route, Sitemap sitemap, String smppClassName, boolean dynamicRoute,
+            Collection<WebPage> pages) {
+        try {
+            Class<? extends SitemapMultiPageProvider> smppClass = (Class<? extends SitemapMultiPageProvider>) Class
+                    .forName(smppClassName);
+
+            SitemapMultiPageProvider smpp = sitemap.useInjector() ? injector.getInstance(smppClass)
+                    : smppClass.newInstance();
+
+            if (!dynamicRoute && ninjaProperties.getBooleanWithDefault(KEY_SHOW_MPP_WARNINGS, true)) {
+                // using a MultiPageProvider for a non-dynamic route is
+                // usually strange. warn about it.
+                LOG.warn(
+                        "Using {} to create sitemap entries for non-dynamic route {} to {}::{}. Is this really intended?",
+                        smppClassName, route.getUri(), route.getControllerClass().getName(),
+                        route.getControllerMethod().getName());
+            }
+
+            try {
+                List<SitemapEntry> entries = smpp.getSitemapEntries(route, sitemap);
+                
+                if ((entries == null) || entries.isEmpty()) {
+                    LOG.warn("{} did not return any sitemap entries for route {} to {}::{}.", smppClassName,
+                            route.getUri(), route.getControllerClass().getName(),
+                            route.getControllerMethod().getName());
+                } else {
+                    
+                    for (SitemapEntry se : entries) {
+                        WebPage wp = new WebPage();
+                        wp.setName(se.getPagePath().replaceFirst("^/", ""));
+                        wp.setShortName(se.getShortName());
+                        wp.setShortDescription(se.getShortDescription());
+                        wp.setLastMod(se.getLastModified());
+                        wp.setPriority(se.getPriority());
+                        wp.setChangeFreq(changeFrequencyFromInteger(se.getChangeFrequency()));
+
+                        // add to the list of pages for this route
+                        pages.add(wp);
+                    }
+                }
+                
+            } catch (NullPointerException npe) {
+                if (sitemap.useInjector()) {
+                    // using injector - show an error message pointing to a
+                    // likely cause of the problem.
+                    LOG.error(
+                            "NullPointerException in {} when using 'useInjector'. Perhaps you forgot to bind() your class in ninja.Module?",
+                            smppClass.getName());
+                }
+                throw npe;
+            }
+
+        } catch (ClassNotFoundException e) {
+            LOG.error("Could not find class " + smppClassName + " as specified for "
+                    + route.getControllerClass().getName() + "." + route.getControllerMethod().getName()
+                    + ". Not including in sitemap.", e);
+        } catch (InstantiationException e) {
+            LOG.error("Could not instantiate class " + smppClassName + " as specified for "
+                    + route.getControllerClass().getName() + "." + route.getControllerMethod().getName()
+                    + ". Not including in sitemap.", e);
+        } catch (IllegalAccessException e) {
+            LOG.error("Illegal access to constructor of class " + smppClassName + " as specified for "
+                    + route.getControllerClass().getName() + "." + route.getControllerMethod().getName()
+                    + ". Not including in sitemap.", e);
+        }
+    }
+
+    /**
+     * Convert one of the change frequency integer constants from the
+     * {@link Sitemap} annotation into the {@link ChangeFreq} enumeration format
+     * used by the sitemap library.
+     * 
      * @param changeFrequency
      * @return
      */
@@ -407,7 +447,7 @@ public class NinjaSitemapController {
      */
     private boolean includeInSitemap(Sitemap sitemap, Route route) {
         if (sitemap == null) {
-            LOG.debug("No @Sitemap annotation for controller {}.{}. Not including in sitemap.xml.",
+            LOG.debug("No @Sitemap annotation for controller {}::{}. Not including in sitemap.xml.",
                     route.getControllerClass().getName(), route.getControllerMethod().getName());
             return false;
 

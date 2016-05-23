@@ -89,6 +89,7 @@ public class SitemapEntry {
         this.pagePath = pagePath;
         this.lastModified = lastModified;
         this.priority = priority;
+        this.changeFrequency = changeFrequency;
     }
 
     public Date getLastModified() {
