@@ -30,113 +30,120 @@ import ninja.Router;
  */
 public class SitemapEntry {
 
-	/**
-	 * The date of last modification
-	 */
-	private Date lastModified;
+    /**
+     * The date of last modification
+     */
+    private Date lastModified;
 
-	/**
-	 * The path to the page
-	 */
-	private String pagePath;
+    /**
+     * The path to the page
+     */
+    private String pagePath;
 
-	/**
-	 * The page priority (0..1)
-	 */
-	private double priority;
+    /**
+     * The page priority (0..1)
+     */
+    private double priority;
 
-	/**
-	 * The change frequency (use one of the frequency constants from
-	 * {@link Sitemap}.
-	 */
-	private int changeFrequency;
+    /**
+     * The change frequency (use one of the frequency constants from
+     * {@link Sitemap}.
+     */
+    private int changeFrequency;
 
-	/**
-	 * Currently not used.
-	 */
-	private String shortName;
+    /**
+     * Currently not used.
+     */
+    private String shortName;
 
-	/**
-	 * currently not used.
-	 */
-	private String shortDescription;
+    /**
+     * currently not used.
+     */
+    private String shortDescription;
 
-	/**
-	 * @param pagePath
-	 *            the path of the URL (as in the {@link Router} for non-dynamic
-	 *            routes)
-	 */
-	public SitemapEntry(String pagePath) {
-		this(pagePath, new Date(), Sitemap.DAILY, 0.5);
-	}
+    /**
+     * @param pagePath
+     *            the path of the URL (as in the {@link Router} for non-dynamic
+     *            routes)
+     */
+    public SitemapEntry(String pagePath) {
+        this(pagePath, new Date(), Sitemap.DAILY, 0.5);
+    }
 
-	/**
-	 * @param pagePath
-	 *            the path of the URL (as in the {@link Router} for non-dynamic
-	 *            routes)
-	 * @param lastModified
-	 *            the last modified Date
-	 * @param changeFrequency
-	 *            the expected change frequency for the page (use one of the
-	 *            constants from {@link Sitemap#ALWAYS},{@link Sitemap#HOURLY},
-	 *            {@link Sitemap#DAILY},{@link Sitemap#WEEKLY},
-	 *            {@link Sitemap#MONTHLY},{@link Sitemap#YEARLY}, or
-	 *            {@link Sitemap#NEVER},
-	 * @param priority
-	 *            the priority of the page (between 0 and 1)
-	 */
-	public SitemapEntry(String pagePath, Date lastModified, int changeFrequency, double priority) {
-		this.pagePath = pagePath;
-		this.lastModified = lastModified;
-		this.priority = priority;
-	}
+    /**
+     * @param pagePath
+     *            the path of the URL (as in the {@link Router} for non-dynamic
+     *            routes)
+     * @param lastModified
+     *            the last modified Date
+     * @param changeFrequency
+     *            the expected change frequency for the page (use one of the
+     *            constants from {@link Sitemap#ALWAYS},{@link Sitemap#HOURLY},
+     *            {@link Sitemap#DAILY},{@link Sitemap#WEEKLY},
+     *            {@link Sitemap#MONTHLY},{@link Sitemap#YEARLY}, or
+     *            {@link Sitemap#NEVER},
+     * @param priority
+     *            the priority of the page (between 0 and 1)
+     */
+    public SitemapEntry(String pagePath, Date lastModified, int changeFrequency, double priority) {
+        this.pagePath = pagePath;
+        this.lastModified = lastModified;
+        this.priority = priority;
+    }
 
-	public Date getLastModified() {
-		return lastModified;
-	}
+    public Date getLastModified() {
+        return lastModified;
+    }
 
-	public void setLastModified(Date lastModified) {
-		this.lastModified = lastModified;
-	}
+    public void setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
+    }
 
-	public String getPagePath() {
-		return pagePath;
-	}
+    public String getPagePath() {
+        return pagePath;
+    }
 
-	public void setPagePath(String pagePath) {
-		this.pagePath = pagePath;
-	}
+    public void setPagePath(String pagePath) {
+        this.pagePath = pagePath;
+    }
 
-	public double getPriority() {
-		return priority;
-	}
+    public double getPriority() {
+        return priority;
+    }
 
-	public void setPriority(double priority) {
-		this.priority = priority;
-	}
+    public void setPriority(double priority) {
+        this.priority = priority;
+    }
 
-	public int getChangeFrequency() {
-		return changeFrequency;
-	}
+    public int getChangeFrequency() {
+        return changeFrequency;
+    }
 
-	public void setChangeFrequency(int changeFrequency) {
-		this.changeFrequency = changeFrequency;
-	}
+    public void setChangeFrequency(int changeFrequency) {
+        this.changeFrequency = changeFrequency;
+    }
 
-	public String getShortName() {
-		return shortName;
-	}
+    public String getShortName() {
+        return shortName;
+    }
 
-	public void setShortName(String shortName) {
-		this.shortName = shortName;
-	}
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
 
-	public String getShortDescription() {
-		return shortDescription;
-	}
+    public String getShortDescription() {
+        return shortDescription;
+    }
 
-	public void setShortDescription(String shortDescription) {
-		this.shortDescription = shortDescription;
-	}
+    public void setShortDescription(String shortDescription) {
+        this.shortDescription = shortDescription;
+    }
+
+    @Override
+    public String toString() {
+        return "SitemapEntry [pagePath=" + pagePath + ", lastModified=" + lastModified + ", priority=" + priority
+                + ", changeFrequency=" + changeFrequency + ", shortName=" + shortName + ", shortDescription="
+                + shortDescription + "]";
+    }
 
 }

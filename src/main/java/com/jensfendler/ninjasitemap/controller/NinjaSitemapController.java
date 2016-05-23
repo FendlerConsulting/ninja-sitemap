@@ -196,13 +196,17 @@ public class NinjaSitemapController {
             }
             final String sitemapUrl = siteUrlPrefix + sitemapRoute;
 
-            // pinging search engines will take some time. run this in a new
-            // thread so that the current request can immediately be served.
+            // we only want to issue search engine pings in production mode
             if (ninjaProperties.isProd()) {
-                // only ping search engines in PROD mode
-                Executors.defaultThreadFactory().newThread(new Runnable() {
-                    public void run() {
-                        if (shouldPingGoogle) {
+
+                // pinging search engines will take some time. run pinging in
+                // separate threads so that the current request can immediately
+                // be served.
+
+                // possibly ping Google search engine in separate thread
+                if (shouldPingGoogle) {
+                    Executors.defaultThreadFactory().newThread(new Runnable() {
+                        public void run() {
                             try {
                                 generator.pingGoogle(sitemapUrl);
                                 LOG.info("Google search engine has been notified of updated sitemap at '{}'.",
@@ -211,7 +215,13 @@ public class NinjaSitemapController {
                                 LOG.warn("Failed to ping Google with updated sitemap.", e);
                             }
                         }
-                        if (shouldPingBing) {
+                    }).start();
+                }
+
+                // possibly ping Bing search engine in separate thread
+                if (shouldPingBing) {
+                    Executors.defaultThreadFactory().newThread(new Runnable() {
+                        public void run() {
                             try {
                                 generator.pingBing(sitemapUrl);
                                 LOG.info("Bing search engine has been notified of updated sitemap at '{}'.",
@@ -220,8 +230,8 @@ public class NinjaSitemapController {
                                 LOG.warn("Failed to ping Google with updated sitemap.", e);
                             }
                         }
-                    }
-                }).start();
+                    }).start();
+                }
             } else {
                 LOG.info("Not pinging search engines in non-production mode.");
             }
